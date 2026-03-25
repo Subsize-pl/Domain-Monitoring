@@ -1,0 +1,14 @@
+[project]
+name = "coursework-4"
+version = "0.1.0"
+description = "A web application for monitoring websites and domains. Tracks site availability, response time, and basic statistics. Built with FastAPI, Python, PostgreSQL, and vanilla HTML/CSS/JS. Includes user authentication and a simple dashboard for viewing domain status. "
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.135.2",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+]
