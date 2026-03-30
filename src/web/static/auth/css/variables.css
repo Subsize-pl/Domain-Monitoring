@@ -1,0 +1,16 @@
+:root {
+  --bg: #eef2ee;
+  --panel-bg: #f7f9f7;
+  --card-bg: #ffffff;
+  --accent: #4a8c5c;
+  --accent-lt: #6aab7a;
+  --accent-dk: #2e6642;
+  --muted: #8ea694;
+  --text: #1e2b22;
+  --text-sm: #4a5e52;
+  --border: #d4e0d6;
+  --shadow: rgba(40, 80, 50, 0.10);
+  --error: #c0392b;
+  --radius: 14px;
+  --container-height-desktop: 580px;
+}

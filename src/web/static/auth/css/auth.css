@@ -1,0 +1,26 @@
+.switch-row {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.switch-row a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.switch-row a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.form-panel {
+  display: none;
+}
+
+.form-panel.active {
+  display: block;
+}
