@@ -1,0 +1,20 @@
+{% from "auth/_macros.html" import text_field, password_field, checkbox %}
+
+<div class="form-panel active" id="form-login">
+  <form action="/auth/login" method="POST">
+    {{ text_field("login-username", "Username", "username", "your_username") }}
+    {{ password_field("login-password", "Password", "password") }}
+
+    <div class="row-two">
+      {{ checkbox("remember", "remember-me", "Remember me") }}
+      <a href="#" class="forgot">Forgot password?</a>
+    </div>
+
+    <div class="switch-row">
+      <span>Don't have an account?</span>
+      <a href="#" class="switch-link" data-mode="register">Register</a>
+    </div>
+
+    <button type="submit" class="btn-submit">Sign In</button>
+  </form>
+</div>

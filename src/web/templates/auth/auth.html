@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}DomainWatch — Login{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', path='/auth/style.css') }}" />
+{% endblock %}
+
+{% block body %}
+<main class="container">
+  {% include "auth/_left_panel.html" %}
+
+  <section class="right-panel">
+    <div class="auth-header">
+      <h1 id="auth-title">Welcome back</h1>
+      <p id="auth-sub" class="auth-sub">Sign in to your monitoring dashboard</p>
+    </div>
+
+    {% include "auth/_login_form.html" %}
+    {% include "auth/_register_form.html" %}
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', path='/auth/script.js') }}"></script>
+{% endblock %}

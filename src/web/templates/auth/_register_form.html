@@ -1,0 +1,21 @@
+{% from "auth/_macros.html" import text_field, password_field, checkbox %}
+
+<div class="form-panel" id="form-register">
+  <form action="/auth/register" method="POST" id="reg-form">
+    {{ text_field("reg-username", "Username", "username", "your_username") }}
+    {{ text_field("reg-email", "Email", "email", "you@example.com", "email", "email") }}
+    {{ password_field("reg-password", "Password", "password") }}
+    {{ password_field("reg-confirm", "Confirm Password", "confirm_password", error_id="confirm-error") }}
+
+    <div class="row-two" style="justify-content:flex-start; margin-bottom:18px;">
+      {{ checkbox("subscribe", "subscribe", "Subscribe to product updates") }}
+    </div>
+
+    <div class="switch-row">
+      <span>Already have an account?</span>
+      <a href="#" class="switch-link" data-mode="login">Sign In</a>
+    </div>
+
+    <button type="submit" class="btn-submit">Create Account</button>
+  </form>
+</div>
