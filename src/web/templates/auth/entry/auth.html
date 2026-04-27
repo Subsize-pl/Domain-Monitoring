@@ -8,7 +8,7 @@
 
 {% block body %}
 <main class="container">
-  {% include "auth/_left_panel.html" %}
+  {% include "auth/entry/_left_panel.html" %}
 
   <section class="right-panel">
     <div class="auth-header">
@@ -16,8 +16,8 @@
       <p id="auth-sub" class="auth-sub">Sign in to your monitoring dashboard</p>
     </div>
 
-    {% include "auth/_login_form.html" %}
-    {% include "auth/_register_form.html" %}
+    {% include "auth/entry/_login_form.html" %}
+    {% include "auth/entry/_register_form.html" %}
   </section>
 </main>
 {% endblock %}

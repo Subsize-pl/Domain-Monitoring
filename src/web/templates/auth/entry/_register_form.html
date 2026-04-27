@@ -1,4 +1,4 @@
-{% from "auth/_macros.html" import text_field, password_field, checkbox %}
+{% from "auth/entry/_macros.html" import text_field, password_field, checkbox %}
 
 <div class="form-panel" id="form-register">
   <form action="/auth/register" method="POST" id="reg-form">
@@ -16,6 +16,6 @@
       <a href="#" class="switch-link" data-mode="login">Sign In</a>
     </div>
 
-    <button type="submit" class="btn-submit">Create Account</button>
+    <button type="submit" class="btn-submit" id="btn-create-account">Create Account</button>
   </form>
 </div>
