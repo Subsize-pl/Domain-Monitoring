@@ -1,30 +1,39 @@
-from functools import cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 
-from anyio.functools import lru_cache
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .mailing import MailingSettings
 from .postgres import PostgresSettings
 from .redis import RedisSettings
+from .log import LoggingSettings
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 
 
-class Settings(BaseSettings):
+class _Settings(BaseSettings):
+    app_base_url: str
+    debug: bool
+
+    smtp_host: str
+    smtp_port: int
+    smtp_admin: str
+    smtp_use_tls: bool = False
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+
     postgres_host: str
     postgres_port: int
     postgres_user: str
     postgres_password: SecretStr
     postgres_db: str
-    postgres_echo: bool = False
 
     redis_host: str
     redis_port: int
-    redis_session_ttl: int = 3600
 
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env",
+        env_file=None,
         extra="ignore",
         case_sensitive=False,
     )
@@ -37,7 +46,7 @@ class Settings(BaseSettings):
             user=self.postgres_user,
             password=self.postgres_password,
             db_name=self.postgres_db,
-            echo=self.postgres_echo,
+            echo=self.debug,
         )
 
     @cached_property
@@ -45,10 +54,26 @@ class Settings(BaseSettings):
         return RedisSettings(
             host=self.redis_host,
             port=self.redis_port,
-            session_ttl=self.redis_session_ttl,
+        )
+
+    @cached_property
+    def mailing(self) -> MailingSettings:
+        return MailingSettings(
+            smtp_host=self.smtp_host,
+            smtp_port=self.smtp_port,
+            smtp_admin=self.smtp_admin,
+            smtp_username=self.smtp_username,
+            smtp_password=self.smtp_password,
+            smtp_use_tls=self.smtp_use_tls,
+        )
+
+    @cached_property
+    def logging(self) -> LoggingSettings:
+        return LoggingSettings(
+            level="DEBUG" if self.debug else "INFO",
         )
 
 
 @lru_cache
-def get_settings() -> Settings:
-    return Settings()
+def get_settings() -> _Settings:
+    return _Settings()
