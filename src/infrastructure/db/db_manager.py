@@ -5,12 +5,13 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncSession,
 )
-from core.utils.config import get_settings
+from core.config import get_settings
+
+settings = get_settings()
 
 
 class DbManager:
     def __init__(self):
-        settings = get_settings()
         self.engine = create_async_engine(
             url=settings.postgres.asyncpg_url,
             echo=settings.postgres.echo,
