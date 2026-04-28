@@ -1,55 +1,78 @@
-{% macro text_field(id, label, name, placeholder="", type="text", icon_type="user") %}
+{% macro text_field(id, label, name, placeholder="", type="text", icon_type="user", value="", autocomplete="", error_id=None, error_text="") %}
 <div class="input-group">
   <label for="{{ id }}">{{ label }}</label>
+
   <div class="input-wrap">
     <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
       {% if icon_type == "email" %}
         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
         <polyline points="22,6 12,13 2,6"/>
-      {% else %}
+      {% endif %}
+      {% if icon_type == "user" %}
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
         <circle cx="12" cy="7" r="4"/>
       {% endif %}
     </svg>
-    <input id="{{ id }}" type="{{ type }}" name="{{ name }}" placeholder="{{ placeholder }}" required />
+
+    <input
+      id="{{ id }}"
+      type="{{ type }}"
+      name="{{ name }}"
+      placeholder="{{ placeholder }}"
+      value="{{ value }}"
+      {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+      required
+    />
   </div>
+
+  {% if error_id %}
+  <span class="field-error" id="{{ error_id }}">{{ error_text }}</span>
+  {% endif %}
 </div>
 {% endmacro %}
 
-{% macro password_field(id, label, name, placeholder="••••••••", error_id=None) %}
+{% macro password_field(id, label, name, placeholder="••••••••", error_id=None, error_text="", autocomplete="new-password") %}
 <div class="input-group">
   <label for="{{ id }}">{{ label }}</label>
+
   <div class="input-wrap">
     <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
       <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
     </svg>
+
     <input
       type="password"
       name="{{ name }}"
       id="{{ id }}"
       placeholder="{{ placeholder }}"
+      {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
       required
     />
+
     <button
       type="button"
       class="eye-btn"
+      data-toggle-password
       data-target="{{ id }}"
       aria-label="toggle password visibility"
+      aria-pressed="false"
     >
-      <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true">
+      <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true" style="display:block;">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
         <circle cx="12" cy="12" r="3"/>
       </svg>
-      <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true">
+
+      <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
         <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
         <line x1="1" y1="1" x2="23" y2="23"/>
       </svg>
     </button>
   </div>
+
   {% if error_id %}
-    <span class="field-error" id="{{ error_id }}"></span>
+  <span class="field-error" id="{{ error_id }}">{{ error_text }}</span>
   {% endif %}
 </div>
 {% endmacro %}
@@ -57,11 +80,13 @@
 {% macro checkbox(name, id, label, checked=false) %}
 <label class="custom-check">
   <input type="checkbox" name="{{ name }}" id="{{ id }}" {% if checked %}checked{% endif %} />
+
   <div class="check-box" aria-hidden="true">
     <svg viewBox="0 0 24 24">
       <polyline points="20 6 9 17 4 12"/>
     </svg>
   </div>
+
   {{ label }}
 </label>
 {% endmacro %}

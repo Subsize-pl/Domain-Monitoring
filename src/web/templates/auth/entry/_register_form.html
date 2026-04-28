@@ -1,21 +1,54 @@
-{% from "auth/entry/_macros.html" import text_field, password_field, checkbox %}
+{% from "auth/entry/_macros.html" import text_field, password_field %}
 
-<div class="form-panel" id="form-register">
-  <form action="/auth/register" method="POST" id="reg-form">
-    {{ text_field("reg-username", "Username", "username", "your_username") }}
-    {{ text_field("reg-email", "Email", "email", "you@example.com", "email", "email") }}
-    {{ password_field("reg-password", "Password", "password") }}
-    {{ password_field("reg-confirm", "Confirm Password", "confirm_password", error_id="confirm-error") }}
+<div class="form-panel {% if active_form == 'register' %}active{% endif %}" id="form-register">
+  <form action="/auth/register" method="POST" id="reg-form" novalidate>
+    {{ text_field(
+      "reg-username",
+      "Username",
+      "username",
+      "your_username",
+      value=values.register_username|default('', true),
+      autocomplete="username",
+      error_id="reg-username-error",
+      error_text=errors.register_username|default('', true)
+    ) }}
 
-    <div class="row-two" style="justify-content:flex-start; margin-bottom:18px;">
-      {{ checkbox("subscribe", "subscribe", "Subscribe to product updates") }}
-    </div>
+    {{ text_field(
+      "reg-email",
+      "Email",
+      "email",
+      "you@example.com",
+      type="email",
+      icon_type="email",
+      value=values.register_email|default('', true),
+      autocomplete="email",
+      error_id="reg-email-error",
+      error_text=errors.register_email|default('', true)
+    ) }}
+
+    {{ password_field(
+      "reg-password",
+      "Password",
+      "password",
+      autocomplete="new-password",
+      error_id="reg-password-error",
+      error_text=errors.register_password|default('', true)
+    ) }}
+
+    {{ password_field(
+      "reg-confirm",
+      "Confirm Password",
+      "confirm_password",
+      autocomplete="new-password",
+      error_id="confirm-error",
+      error_text=errors.confirmed_password|default('',true)
+    ) }}
 
     <div class="switch-row">
       <span>Already have an account?</span>
-      <a href="#" class="switch-link" data-mode="login">Sign In</a>
+      <a href="/web/login" class="switch-link" data-mode="login">Sign In</a>
     </div>
 
-    <button type="submit" class="btn-submit" id="btn-create-account">Create Account</button>
+    <button type="submit" class="btn-submit">Create Account</button>
   </form>
 </div>

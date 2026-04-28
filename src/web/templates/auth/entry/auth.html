@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}DomainWatch — Login{% endblock %}
+{% block title %}
+DomainWatch — {% if active_form == "register" %}Register{% else %}Login{% endif %}
+{% endblock %}
 
 {% block styles %}
-  <link rel="stylesheet" href="{{ url_for('static', path='/auth/style.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', path='/auth/style.css') }}" />
 {% endblock %}
 
 {% block body %}
-<main class="container">
+<main
+  class="container"
+  data-active-form="{{ active_form|default('login', true) }}"
+  data-login-path="/web/login"
+  data-register-path="/web/register"
+>
   {% include "auth/entry/_left_panel.html" %}
 
   <section class="right-panel">
     <div class="auth-header">
-      <h1 id="auth-title">Welcome back</h1>
-      <p id="auth-sub" class="auth-sub">Sign in to your monitoring dashboard</p>
+      <h1 id="auth-title">
+        {% if active_form == "register" %}Create account{% else %}Welcome back{% endif %}
+      </h1>
+      <p id="auth-sub" class="auth-sub">
+        {% if active_form == "register" %}
+          Free forever — no credit card needed
+        {% else %}
+          Sign in to your monitoring dashboard
+        {% endif %}
+      </p>
     </div>
 
     {% include "auth/entry/_login_form.html" %}
@@ -23,5 +38,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{{ url_for('static', path='/auth/script.js') }}"></script>
+<script type="module" src="{{ url_for('static', path='/auth/script.js') }}"></script>
 {% endblock %}

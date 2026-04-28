@@ -1,18 +1,30 @@
-{% from "auth/entry/_macros.html" import text_field, password_field, checkbox %}
+{% from "auth/entry/_macros.html" import text_field, password_field %}
 
-<div class="form-panel active" id="form-login">
-  <form action="/auth/login" method="POST">
-    {{ text_field("login-username", "Username", "username", "your_username") }}
-    {{ password_field("login-password", "Password", "password") }}
+<div class="form-panel {% if active_form == 'login' %}active{% endif %}" id="form-login">
+  <form action="/auth/login" method="POST" novalidate>
+    {{ text_field(
+      "login-username",
+      "Username",
+      "username",
+      "your_username",
+      value=values.login_username|default('', true),
+      autocomplete="username",
+      error_id="login-username-error",
+      error_text=errors.login_username|default('', true)
+    ) }}
 
-    <div class="row-two">
-      {{ checkbox("remember", "remember-me", "Remember me") }}
-      <a href="#" class="forgot">Forgot password?</a>
-    </div>
+    {{ password_field(
+      "login-password",
+      "Password",
+      "password",
+      autocomplete="current-password",
+      error_id="login-password-error",
+      error_text=errors.login_password|default('', true)
+    ) }}
 
     <div class="switch-row">
       <span>Don't have an account?</span>
-      <a href="#" class="switch-link" data-mode="register">Register</a>
+      <a href="/web/register" class="switch-link" data-mode="register">Register</a>
     </div>
 
     <button type="submit" class="btn-submit">Sign In</button>
