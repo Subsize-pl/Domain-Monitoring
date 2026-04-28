@@ -1,93 +1,129 @@
+import { ROUTES, STORAGE_KEYS } from "../core/config.js";
+import { createStateManager } from "./js/storage.js";
+import {
+  ensureErrorNode,
+  validateConfirmPassword,
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from "./js/validation.js";
+import {
+  bindPasswordToggle,
+  bindSwitchLinks,
+  bindTextInput,
+  restoreState,
+  setMode,
+} from "./js/ui.js";
+
 document.addEventListener("DOMContentLoaded", function () {
-  const formLogin    = document.getElementById("form-login");
+  const root = document.querySelector("[data-active-form]");
+  if (!root) return;
+
+  const formLogin = document.getElementById("form-login");
   const formRegister = document.getElementById("form-register");
-  const authTitle    = document.getElementById("auth-title");
-  const authSub      = document.getElementById("auth-sub");
+  const authTitle = document.getElementById("auth-title");
+  const authSub = document.getElementById("auth-sub");
 
-  document.querySelectorAll(".switch-link").forEach(function (link) {
-    link.addEventListener("click", function (e) {
-      e.preventDefault();
-      const mode = link.dataset.mode; //  "login" | "register"
+  const loginPath = root.dataset.loginPath || ROUTES.LOGIN;
+  const registerPath = root.dataset.registerPath || ROUTES.REGISTER;
 
-      if (mode === "register") {
-        if (formLogin) formLogin.classList.remove("active");
-        if (formRegister) formRegister.classList.add("active");
-        if (authTitle) authTitle.textContent = "Create account";
-        if (authSub) authSub.textContent = "Free forever — no credit card needed";
-        const first = formRegister && formRegister.querySelector("input");
-        if (first) first.focus();
-      } else {
-        if (formRegister) formRegister.classList.remove("active");
-        if (formLogin) formLogin.classList.add("active");
-        if (authTitle) authTitle.textContent = "Welcome back";
-        if (authSub) authSub.textContent = "Sign in to your monitoring dashboard";
-        const first = formLogin && formLogin.querySelector("input");
-        if (first) first.focus();
-      }
-    });
-  });
+  const loginForm = document.querySelector("#form-login form");
+  const registerForm = document.getElementById("reg-form");
 
-  document.querySelectorAll(".eye-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      const targetId = btn.getAttribute("data-target");
-      const input    = document.getElementById(targetId);
-      const eyeOpen  = btn.querySelector(".eye-open");
-      const eyeClosed = btn.querySelector(".eye-closed");
+  const loginUsername = document.getElementById("login-username");
+  const loginPassword = document.getElementById("login-password");
 
-      if (!input) return;
+  const registerUsername = document.getElementById("reg-username");
+  const registerEmail = document.getElementById("reg-email");
+  const registerPassword = document.getElementById("reg-password");
+  const registerConfirm = document.getElementById("reg-confirm");
 
-      if (input.type === "password") {
-        input.type = "text";
-        if (eyeOpen) eyeOpen.style.display = "none";
-        if (eyeClosed) eyeClosed.style.display = "block";
-        btn.setAttribute("aria-pressed", "true");
-      } else {
-        input.type = "password";
-        if (eyeOpen) eyeOpen.style.display = "block";
-        if (eyeClosed) eyeClosed.style.display = "none";
-        btn.setAttribute("aria-pressed", "false");
-      }
-    });
-  });
+  const loginUsernameError = document.getElementById("login-username-error");
+  const loginPasswordError = document.getElementById("login-password-error");
+  const registerUsernameError = document.getElementById("reg-username-error");
+  const registerEmailError = document.getElementById("reg-email-error");
+  const registerPasswordError = document.getElementById("reg-password-error");
+  const registerConfirmError = ensureErrorNode(registerConfirm, "confirm-error");
 
-  const regForm    = document.getElementById("reg-form");
-  const regPass    = document.getElementById("reg-password");
-  const regConfirm = document.getElementById("reg-confirm");
-  const confirmErr = document.getElementById("confirm-error");
+  const defaults = {
+    activeForm: root.dataset.activeForm || "login",
+    loginUsername: "",
+    registerUsername: "",
+    registerEmail: "",
+  };
 
-  function checkPasswordMatch() {
-    if (!regPass || !regConfirm || !confirmErr) return;
+  const { readState, writeState } = createStateManager(STORAGE_KEYS.AUTH_STATE, defaults);
 
-    if (regConfirm.value === "") {
-      confirmErr.textContent = "";
-      regConfirm.classList.remove("error");
-      return;
-    }
-    if (regPass.value !== regConfirm.value) {
-      confirmErr.textContent = "Passwords do not match";
-      regConfirm.classList.add("error");
-    } else {
-      confirmErr.textContent = "";
-      regConfirm.classList.remove("error");
-    }
+  function setActiveMode(mode, persist) {
+    setMode(
+      { formLogin, formRegister, authTitle, authSub, writeState },
+      mode,
+      persist
+    );
   }
 
-  if (regConfirm && regPass) {
-    regConfirm.addEventListener("input", checkPasswordMatch);
-    regPass.addEventListener("input", checkPasswordMatch);
+  function validateLoginForm() {
+    const okUsername = validateUsername(loginUsername, loginUsernameError);
+    const okPassword = validatePassword(loginPassword, loginPasswordError);
+    return okUsername && okPassword;
   }
 
-  if (regForm) {
-    regForm.addEventListener("submit", function (e) {
-      if (!regPass || !regConfirm || regPass.value !== regConfirm.value) {
+  function validateRegisterForm() {
+    const okUsername = validateUsername(registerUsername, registerUsernameError);
+    const okEmail = validateEmail(registerEmail, registerEmailError);
+    const okPassword = validatePassword(registerPassword, registerPasswordError);
+    const okConfirm = validateConfirmPassword(
+      registerPassword,
+      registerConfirm,
+      registerConfirmError
+    );
+
+    return okUsername && okEmail && okPassword && okConfirm;
+  }
+
+  bindTextInput(loginUsername, "loginUsername", writeState);
+  bindTextInput(registerUsername, "registerUsername", writeState);
+  bindTextInput(registerEmail, "registerEmail", writeState);
+
+  bindPasswordToggle();
+
+  bindSwitchLinks({
+    loginPath,
+    registerPath,
+    writeState,
+  });
+
+  if (loginUsername) loginUsername.addEventListener("input", validateLoginForm);
+  if (loginPassword) loginPassword.addEventListener("input", validateLoginForm);
+
+  if (registerUsername) registerUsername.addEventListener("input", validateRegisterForm);
+  if (registerEmail) registerEmail.addEventListener("input", validateRegisterForm);
+  if (registerPassword) registerPassword.addEventListener("input", validateRegisterForm);
+  if (registerConfirm) registerConfirm.addEventListener("input", validateRegisterForm);
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", function (e) {
+      if (!validateLoginForm()) {
         e.preventDefault();
-        if (confirmErr) confirmErr.textContent = "Passwords do not match";
-        if (regConfirm) {
-          regConfirm.classList.add("error");
-          regConfirm.focus();
-        }
       }
     });
   }
 
+  if (registerForm) {
+    registerForm.addEventListener("submit", function (e) {
+      if (!validateRegisterForm()) {
+        e.preventDefault();
+      }
+    });
+  }
+
+  restoreState({
+    readState,
+    setModeFn: setActiveMode,
+    formLogin,
+    formRegister,
+    loginUsername,
+    registerUsername,
+    registerEmail,
+  });
 });
