@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from functools import cached_property, lru_cache
+from os import getenv
 from pathlib import Path
 
 from pydantic import SecretStr
@@ -10,6 +13,12 @@ from .redis import RedisSettings
 from .log import LoggingSettings
 
 BASE_DIR = Path(__file__).resolve().parents[3]
+ENV_NAME = getenv("ENV", "dev").strip().lower()
+
+if ENV_NAME not in {"dev", "prod"}:
+    ENV_NAME = "dev"
+
+ENV_FILE = BASE_DIR / "env" / f".env.{ENV_NAME}"
 
 
 class _Settings(BaseSettings):
@@ -33,9 +42,10 @@ class _Settings(BaseSettings):
     redis_port: int
 
     model_config = SettingsConfigDict(
-        env_file=None,
-        extra="ignore",
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     @cached_property
@@ -74,6 +84,6 @@ class _Settings(BaseSettings):
         )
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_settings() -> _Settings:
     return _Settings()
