@@ -6,6 +6,10 @@ services:
       - "8000:8000"
     env_file:
       - env/.env.dev
+    environment:
+      APP_ENV: dev
+    volumes:
+      - ./src/infrastructure/db/alembic/versions:/app/infrastructure/db/alembic/versions
     networks:
       - appnet
     depends_on:
@@ -52,7 +56,7 @@ services:
     networks:
       - appnet
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "1025" ]
+      test: ["CMD", "nc", "-z", "localhost", "1025"]
       interval: 5s
       timeout: 3s
       retries: 5
