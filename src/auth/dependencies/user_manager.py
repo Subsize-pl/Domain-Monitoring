@@ -2,7 +2,7 @@ from fastapi import Depends
 
 from auth.dependencies.sqla_user_db import get_user_db
 from auth.user_manager import UserManager
-from core.config import get_settings
+from core.config.settings import get_settings
 from infrastructure.mailing.service import get_mail_service
 
 settings = get_settings()

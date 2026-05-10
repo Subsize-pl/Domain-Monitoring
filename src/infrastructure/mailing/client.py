@@ -3,7 +3,7 @@ from functools import lru_cache
 import aiosmtplib
 from email.message import EmailMessage
 
-from core.config import get_settings
+from core.config.settings import get_settings
 from core.config.mailing import MailingSettings
 from core.utils.retry import retry
 

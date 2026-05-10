@@ -10,7 +10,7 @@ from web.routes.pages import router as web_router
 
 async def create_db_and_tables():
     from infrastructure.db.db_manager import db_manager
-    from infrastructure.db import Base
+    from infrastructure.db.base import Base
 
     async with db_manager.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

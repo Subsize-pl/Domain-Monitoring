@@ -2,8 +2,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.config import AuthConfig
-from core.config import get_settings
-from infrastructure.db import db_manager
+from core.config.settings import get_settings
+from infrastructure.db.db_manager import db_manager
 
 from auth.cache.session import AuthSessionCache
 from auth.repositories.session import AuthSessionRepository

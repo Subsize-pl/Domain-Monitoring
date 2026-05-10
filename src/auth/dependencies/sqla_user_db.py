@@ -3,7 +3,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.repositories.user import ExtendedSQLAlchemyUserDatabase
-from infrastructure.db import db_manager
+from infrastructure.db.db_manager import db_manager
 from auth.models.user import User
 
 
