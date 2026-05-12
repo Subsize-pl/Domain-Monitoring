@@ -1,0 +1,9 @@
+class MonitoringConfig:
+    ROUTER_PREFIX = "/domains"
+    ROUTER_TAG = "domains"
+
+    MAX_DOMAINS_PER_USER = 50
+    DEFAULT_DOMAIN_PAGE_SIZE = 10
+    DEFAULT_LIMIT_PER_DOMAIN = 3
+
+    MAX_DOMAIN_TITLE_LENGTH = 64
