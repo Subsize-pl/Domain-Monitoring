@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db.base import Base
 from infrastructure.db.mixins import CreatedMixin
+from monitoring.config import MonitoringConfig
 
 if TYPE_CHECKING:
     from auth.models import User
@@ -32,7 +33,15 @@ class UserDomain(Base, CreatedMixin):
         ForeignKey("domain.id", ondelete="CASCADE"),
     )
 
-    title: Mapped[str | None] = mapped_column(String(64))
+    title: Mapped[str | None] = mapped_column(
+        String(MonitoringConfig.MAX_DOMAIN_TITLE_LENGTH),
+    )
 
-    user: Mapped["User"] = relationship(back_populates="user_domains")
-    domain: Mapped["Domain"] = relationship(back_populates="user_domains")
+    user: Mapped["User"] = relationship(
+        back_populates="user_domains",
+        lazy="noload",
+    )
+    domain: Mapped["Domain"] = relationship(
+        back_populates="user_domains",
+        lazy="noload",
+    )

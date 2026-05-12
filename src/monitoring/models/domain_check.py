@@ -39,4 +39,7 @@ class DomainCheck(Base):
     latency_ms: Mapped[int | None]
     error_text: Mapped[str | None]
 
-    domain: Mapped["Domain"] = relationship(back_populates="checks")
+    domain: Mapped["Domain"] = relationship(
+        back_populates="checks",
+        lazy="noload",
+    )

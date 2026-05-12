@@ -11,11 +11,14 @@ if TYPE_CHECKING:
     from monitoring.models.user_domain import UserDomain
 
 
+MAX_USERNAME_LENGTH = 128
+
+
 class User(Base, SQLAlchemyBaseUserTableUUID, CreatedMixin, UpdatedMixin):
     __tablename__ = "user"
 
     username: Mapped[str] = mapped_column(
-        String(128),
+        String(MAX_USERNAME_LENGTH),
         unique=True,
         index=True,
     )
@@ -23,4 +26,5 @@ class User(Base, SQLAlchemyBaseUserTableUUID, CreatedMixin, UpdatedMixin):
     user_domains: Mapped[list["UserDomain"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+        lazy="noload",
     )
