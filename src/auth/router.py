@@ -30,8 +30,11 @@ router = APIRouter(
 router.include_router(fastapi_users.get_verify_router(UserRead))
 router.include_router(fastapi_users.get_reset_password_router())
 
-current_active_user = fastapi_users.current_user(active=True)
-current_active_verified_user = fastapi_users.current_user(active=True, verified=True)
+get_current_active_user = fastapi_users.current_user(active=True)
+get_current_active_verified_user = fastapi_users.current_user(
+    active=True,
+    verified=True,
+)
 
 logger = get_logger(__name__)
 
@@ -242,7 +245,7 @@ async def register(
 )
 async def logout(
     request: Request,
-    user=Depends(current_active_user),
+    user=Depends(get_current_active_user),
     strategy=Depends(auth_backend.get_strategy),
 ):
     logger.info("[LOGOUT] Attempt user_id=%s", user.id)
