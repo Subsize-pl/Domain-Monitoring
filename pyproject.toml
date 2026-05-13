@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "coursework-4"
 version = "0.1.0"
@@ -19,3 +23,10 @@ dependencies = [
 dev = [
     "black>=26.3.1",
 ]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["domain_monitoring*"]

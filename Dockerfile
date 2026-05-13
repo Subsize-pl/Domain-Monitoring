@@ -2,17 +2,18 @@ FROM python:3.13.5-slim
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app/src
 
 WORKDIR /app
 
+RUN pip install --no-cache-dir uv
+
 COPY pyproject.toml uv.lock ./
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY alembic.ini ./
 
-RUN pip install --no-cache-dir uv && \
-    uv pip install --system .
-
-COPY src/ /app/
-COPY scripts/ /app/scripts/
-COPY alembic.ini /app/alembic.ini
+RUN uv pip install --system .
 
 RUN chmod +x /app/scripts/prestart.sh
 
