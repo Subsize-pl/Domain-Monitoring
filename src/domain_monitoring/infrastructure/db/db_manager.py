@@ -14,7 +14,7 @@ class DbManager:
     def __init__(self):
         self.engine = create_async_engine(
             url=settings.postgres.asyncpg_url,
-            echo=settings.postgres.echo,
+            echo=settings.debug,
         )
         self.session_factory = async_sessionmaker(
             bind=self.engine,

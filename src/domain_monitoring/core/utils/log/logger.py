@@ -33,6 +33,8 @@ def setup_logging():
     root_logger.setLevel(settings.logging.level)
     root_logger.addHandler(rich_handler)
 
+    root_logger.info(root_logger.level)
+
 
 def get_logger(name: str):
     return logging.getLogger(name)

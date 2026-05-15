@@ -27,7 +27,11 @@ class AuthSessionRepository:
                 f"Adding session {session_id} for user {user_id}, expires at {expires_at}"
             )
             self.session.add(
-                AuthSession(id=session_id, user_id=user_id, expires_at=expires_at)
+                AuthSession(
+                    id=session_id,
+                    user_id=user_id,
+                    expires_at=expires_at,
+                )
             )
             await self.session.commit()
             logger.info(f"Session {session_id} added for user {user_id}")

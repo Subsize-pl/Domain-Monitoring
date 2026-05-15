@@ -12,6 +12,7 @@ from domain_monitoring.infrastructure.mailing.service import MailService
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
+    # TODO: add normal value
     verification_token_secret = "SuperSecretToken"
 
     def __init__(
@@ -30,10 +31,12 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         token: str,
         request: Request | None = None,
     ) -> None:
+
         verification_link = (
             f"{self.app_base_url}{AuthConfig.api_prefix}/verify?token={token}"
         )
 
+        # TODO: In the future, add a background implementation in another service
         asyncio.create_task(
             self.mail_service.send_verification_email(
                 user.email,

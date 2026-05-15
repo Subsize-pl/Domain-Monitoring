@@ -27,11 +27,16 @@ class AuthSessionService:
 
         await self.repo.add(session_id, user_id, expires_at)
         logger.info(
-            f"Session {session_id} created for user {user_id}, expires at {expires_at}"
+            f"Session {session_id} created for user {user_id}, "
+            f"expires at {expires_at}"
         )
 
         try:
-            await self.cache.cache_session(session_id, user_id, self.session_ttl)
+            await self.cache.cache_session(
+                session_id,
+                user_id,
+                self.session_ttl,
+            )
             logger.info(f"Session {session_id} cached for user {user_id}")
         except Exception as e:
             logger.error(
@@ -43,7 +48,10 @@ class AuthSessionService:
 
         return str(session_id)
 
-    async def get_user_id_by_session_id(self, session_id: str) -> uuid.UUID | None:
+    async def get_user_id_by_session_id(
+        self,
+        session_id: str,
+    ) -> uuid.UUID | None:
         session_uuid = uuid.UUID(session_id)
         logger.info(f"Getting user ID for session {session_uuid}")
 
