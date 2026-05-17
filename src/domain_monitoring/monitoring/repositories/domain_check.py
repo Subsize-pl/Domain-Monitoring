@@ -9,7 +9,11 @@ from sqlalchemy.orm import aliased
 
 from domain_monitoring.monitoring.config import MonitoringConfig
 from domain_monitoring.monitoring.models.domain_check import DomainCheck
-from domain_monitoring.monitoring.models.domain_status import MonitorStatus
+from domain_monitoring.monitoring.models.domain_protocol import DomainProtocol
+from domain_monitoring.monitoring.models.monitor_status import (
+    MonitorStatus,
+)
+from domain_monitoring.monitoring.models.tls_status import TlsStatus
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,9 @@ class DomainCheckRepository:
         domain_id: uuid.UUID,
         checked_at: datetime,
         status: MonitorStatus,
+        attempt_count: int,
+        scheme_used: DomainProtocol | None = None,
+        tls_status: TlsStatus | None = None,
         http_status_code: int | None = None,
         latency_ms: int | None = None,
         error_text: str | None = None,
@@ -32,6 +39,9 @@ class DomainCheckRepository:
             domain_id=domain_id,
             checked_at=checked_at,
             status=status,
+            attempt_count=attempt_count,
+            scheme_used=scheme_used,
+            tls_status=tls_status,
             http_status_code=http_status_code,
             latency_ms=latency_ms,
             error_text=error_text,
@@ -39,9 +49,8 @@ class DomainCheckRepository:
         self._session.add(check)
         await self._session.flush()
         logger.info(
-            "Created domain check for domain %s (%s)",
-            domain_id,
-            check.id,
+            "Created domain check: %s",
+            check,
         )
         return check
 
