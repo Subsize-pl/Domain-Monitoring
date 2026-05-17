@@ -13,5 +13,5 @@ async def get_user_manager(user_db=Depends(get_user_db)):
     yield UserManager(
         user_db=user_db,
         mail_service=mail_service,
-        app_base_url=settings.app_base_url,
+        app_base_url=settings.urls.APP_BASE,
     )
