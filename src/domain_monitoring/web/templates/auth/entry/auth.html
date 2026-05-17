@@ -1,4 +1,4 @@
-{% extends "../../base.html" %}
+{% extends "/base.html" %}
 
 {% block title %}
 DomainWatch — {% if active_form == "register" %}Register{% else %}Login{% endif %}
@@ -12,8 +12,8 @@ DomainWatch — {% if active_form == "register" %}Register{% else %}Login{% endi
 <main
   class="container"
   data-active-form="{{ active_form|default('login', true) }}"
-  data-login-path="/web/login"
-  data-register-path="/web/register"
+  data-login-path="/login"
+  data-register-path="/register"
 >
   {% include "auth/entry/_left_panel.html" %}
 

@@ -1,6 +1,6 @@
 export const ROUTES = {
-  LOGIN: "/web/login",
-  REGISTER: "/web/register",
+  LOGIN: "/login",
+  REGISTER: "/register",
 };
 
 export const STORAGE_KEYS = {

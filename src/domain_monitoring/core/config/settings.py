@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import cached_property, lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,6 +10,9 @@ from .mailing import MailingSettings
 from .postgres import PostgresSettings
 from .redis import RedisSettings
 from .log import LoggingSettings
+from .urls import AppUrlSettings
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -46,7 +50,6 @@ class Settings(BaseSettings):
             user=self.postgres_user,
             password=self.postgres_password,
             db_name=self.postgres_db,
-            echo=self.debug,
         )
 
     @cached_property
@@ -74,8 +77,10 @@ class Settings(BaseSettings):
         )
 
     @cached_property
-    def app_base_url(self):
-        return f"{self.app_protocol}://{self.app_host}:{self.app_port}"
+    def urls(self):
+        return AppUrlSettings(
+            f"{self.app_protocol}://{self.app_host}:{self.app_port}",
+        )
 
 
 @lru_cache(maxsize=1)
