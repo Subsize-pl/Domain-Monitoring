@@ -5,7 +5,7 @@ from email.message import EmailMessage
 
 from domain_monitoring.core.config.settings import get_settings
 from domain_monitoring.core.config.mailing import MailingSettings
-from domain_monitoring.core.utils.retry import retry
+from domain_monitoring.core.utils.retry_deco import retry
 
 settings = get_settings()
 

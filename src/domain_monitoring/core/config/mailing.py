@@ -1,4 +1,4 @@
-from pydantic import Field, SecretStr
+from pydantic import SecretStr
 
 
 class MailingSettings:
