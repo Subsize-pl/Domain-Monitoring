@@ -1,3 +1,4 @@
+from functools import cached_property, lru_cache
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -12,20 +13,26 @@ settings = get_settings()
 
 class DbManager:
     def __init__(self):
-        self.engine = create_async_engine(
+        self._engine = create_async_engine(
             url=settings.postgres.asyncpg_url,
             echo=settings.debug,
         )
-        self.session_factory = async_sessionmaker(
-            bind=self.engine,
+        self._session_factory = async_sessionmaker(
+            bind=self._engine,
             autoflush=False,
             autocommit=False,
             expire_on_commit=False,
         )
 
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
-        async with self.session_factory() as session:
+        async with self._session_factory() as session:
             yield session
 
+    @cached_property
+    def async_session_factory(self) -> async_sessionmaker[AsyncSession]:
+        return self._session_factory
 
-db_manager = DbManager()
+
+@lru_cache(maxsize=1)
+def get_db_manager() -> DbManager:
+    return DbManager()
