@@ -6,7 +6,9 @@ from sqlalchemy import ForeignKey, DateTime, Enum, Index, desc, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from domain_monitoring.infrastructure.db.base import Base
-from domain_monitoring.monitoring.models.domain_status import MonitorStatus
+from domain_monitoring.monitoring.models.domain_protocol import DomainProtocol
+from domain_monitoring.monitoring.models.monitor_status import MonitorStatus
+from domain_monitoring.monitoring.models.tls_status import TlsStatus
 
 if TYPE_CHECKING:
     from domain_monitoring.monitoring.models import Domain
@@ -34,7 +36,15 @@ class DomainCheck(Base):
     status: Mapped[MonitorStatus] = mapped_column(
         Enum(MonitorStatus, name="monitor_status"),
     )
+    attempt_count: Mapped[int]
 
+    scheme_used: Mapped[DomainProtocol | None] = mapped_column(
+        Enum(DomainProtocol, name="domain_protocol"),
+    )
+
+    tls_status: Mapped[TlsStatus] = mapped_column(
+        Enum(TlsStatus, name="tls_status"),
+    )
     http_status_code: Mapped[int | None]
     latency_ms: Mapped[int | None]
     error_text: Mapped[str | None]
