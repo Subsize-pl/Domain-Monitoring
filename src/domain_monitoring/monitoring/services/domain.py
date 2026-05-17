@@ -11,6 +11,7 @@ from domain_monitoring.monitoring.exceptions import (
     DomainNotFound,
     DomainAlreadyAdded,
 )
+from domain_monitoring.monitoring.models import DomainCheck
 from domain_monitoring.monitoring.models.domain import Domain
 from domain_monitoring.monitoring.repositories.domain import DomainRepository
 from domain_monitoring.monitoring.repositories.domain_check import DomainCheckRepository
@@ -37,7 +38,7 @@ class DomainService:
         self,
         user_id: uuid.UUID,
         name: str,
-        title: str | None,
+        title: str | None = None,
     ) -> DomainOut:
         try:
             logger.debug(
@@ -46,25 +47,14 @@ class DomainService:
             )
             normalized = normalize_and_validate_domain(name).normalized
         except DomainValidationException as exc:
-            logger.debug(
-                "Invalid domain name %s: %s",
-                repr(name),
-                str(exc),
-            )
+            logger.debug("Invalid domain name %r: %s", name, exc)
             raise
 
-        logger.info(
-            "Adding domain %s for user %s",
-            repr(normalized),
-            user_id,
-        )
+        logger.info("Adding domain %r for user %s", normalized, user_id)
 
         count = await self._domain_repo.count_user_domains(user_id)
         if count >= MonitoringConfig.MAX_DOMAINS_PER_USER:
-            logger.warning(
-                "User %s reached the domain limit",
-                user_id,
-            )
+            logger.warning("User %s reached the domain limit", user_id)
             raise DomainLimitExceeded(
                 f"You have reached the limit of"
                 f" {MonitoringConfig.MAX_DOMAINS_PER_USER} domains."
@@ -78,8 +68,8 @@ class DomainService:
             )
             if existing_link is not None:
                 logger.info(
-                    "Domain %s is already added for user %s",
-                    repr(normalized),
+                    "Domain %r is already added for user %s",
+                    normalized,
                     user_id,
                 )
                 raise DomainAlreadyAdded(
@@ -104,8 +94,8 @@ class DomainService:
         except Exception:
             await self._session.rollback()
             logger.exception(
-                "Failed to add domain %s for user %s %s",
-                repr(normalized),
+                "Failed to add domain %r for user %s %s",
+                normalized,
                 user_id,
                 f"with title {title!r}" if title is not None else "without title",
             )
@@ -157,12 +147,12 @@ class DomainService:
         user_id: uuid.UUID,
         *,
         page: int = 1,
-        page_size: int = MonitoringConfig.DEFAULT_DOMAIN_PAGE_SIZE,
+        page_size: int = MonitoringConfig.DOMAIN_PAGE_SIZE_DEFAULT,
     ) -> DomainListOut:
         page = max(page, 1)
         page_size = max(
-            1,
-            min(page_size, MonitoringConfig.DEFAULT_DOMAIN_PAGE_SIZE),
+            MonitoringConfig.DOMAIN_PAGE_SIZE_MIN,
+            min(page_size, MonitoringConfig.DOMAIN_PAGE_SIZE_MAX),
         )
         offset = (page - 1) * page_size
 
@@ -199,7 +189,10 @@ class DomainService:
 
         items: list[DomainOut] = []
         for titled_domain in titled_domains:
-            raw_checks = checks_map.get(titled_domain.domain.id, [])
+            raw_checks: list[DomainCheck] = checks_map.get(
+                titled_domain.domain.id,
+                [],
+            )
             items.append(
                 DomainOut(
                     id=titled_domain.domain.id,
@@ -212,6 +205,8 @@ class DomainService:
                             id=check.id,
                             checked_at=check.checked_at,
                             status=check.status,
+                            scheme_used=check.scheme_used,
+                            tls_status=check.tls_status,
                             http_status_code=check.http_status_code,
                             latency_ms=check.latency_ms,
                             error_text=check.error_text,
@@ -246,6 +241,8 @@ class DomainService:
                     id=check.id,
                     checked_at=check.checked_at,
                     status=check.status,
+                    scheme_used=check.scheme_used,
+                    tls_status=check.tls_status,
                     http_status_code=check.http_status_code,
                     latency_ms=check.latency_ms,
                     error_text=check.error_text,
