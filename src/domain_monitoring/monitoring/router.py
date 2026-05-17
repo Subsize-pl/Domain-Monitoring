@@ -1,16 +1,20 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from domain_monitoring.core.exceptions.domain_validation import (
     DomainValidationException,
 )
 from domain_monitoring.core.utils.log.logger import get_logger
-from domain_monitoring.auth import get_current_active_user
+from domain_monitoring.auth.dependencies.current_user import (
+    get_current_active_user,
+)
 from domain_monitoring.auth.models import User
 from domain_monitoring.monitoring.config import MonitoringConfig
-from domain_monitoring.monitoring.dependencies.domain_service import get_domain_service
+from domain_monitoring.monitoring.dependencies.domain_service import (
+    get_domain_service,
+)
 
 from domain_monitoring.monitoring.schemas.domain import (
     DomainAddRequest,
@@ -42,8 +46,20 @@ router = APIRouter(
 async def list_domains(
     current_user: Annotated[User, Depends(get_current_active_user)],
     service: Annotated[DomainService, Depends(get_domain_service)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[
+        int,
+        Query(
+            ge=MonitoringConfig.DOMAIN_PAGE_SIZE_MIN,
+            le=MonitoringConfig.DOMAIN_PAGE_SIZE_MAX,
+        ),
+    ] = MonitoringConfig.DOMAIN_PAGE_SIZE_DEFAULT,
 ) -> DomainListOut:
-    return await service.list_domains(current_user.id)
+    return await service.list_domains(
+        current_user.id,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.post(
@@ -58,7 +74,11 @@ async def add_domain(
     service: Annotated[DomainService, Depends(get_domain_service)],
 ) -> DomainOut:
     try:
-        return await service.add_domain(current_user.id, body.name)
+        return await service.add_domain(
+            current_user.id,
+            body.name,
+            body.title,
+        )
     except DomainLimitExceeded as exc:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
