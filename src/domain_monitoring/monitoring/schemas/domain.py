@@ -4,20 +4,28 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
+from domain_monitoring.core.utils.domain_validation import MAXIMUM_DOMAIN_LENGTH
 from domain_monitoring.monitoring.config import MonitoringConfig
-from domain_monitoring.monitoring.models.domain_status import MonitorStatus
+from domain_monitoring.monitoring.models.domain_protocol import DomainProtocol
+from domain_monitoring.monitoring.models.monitor_status import MonitorStatus
+from domain_monitoring.monitoring.models.tls_status import TlsStatus
 
 
 class DomainAddRequest(BaseModel):
-    name: str
-    title: Annotated[
+    name: Annotated[
         str,
-        Field(max_length=MonitoringConfig.MAX_DOMAIN_TITLE_LENGTH),
+        Field(max_length=MAXIMUM_DOMAIN_LENGTH),
+    ]
+    title: Annotated[
+        str | None,
+        Field(
+            default=None,
+            max_length=MonitoringConfig.MAX_DOMAIN_TITLE_LENGTH,
+        ),
     ]
 
     model_config = {
         "extra": "forbid",
-        "populate_by_name": True,
         "str_strip_whitespace": True,
     }
 
@@ -26,6 +34,8 @@ class DomainCheckOut(BaseModel):
     id: uuid.UUID
     checked_at: datetime
     status: MonitorStatus
+    scheme_used: DomainProtocol | None
+    tls_status: TlsStatus
     http_status_code: int | None
     latency_ms: int | None
     error_text: str | None
@@ -36,10 +46,9 @@ class DomainCheckOut(BaseModel):
 class DomainOut(BaseModel):
     id: uuid.UUID
     name: str
-    title: str
+    title: str | None
     is_enabled: bool
     created_at: datetime
-    # Last 3 checks (newest first)
     latest_checks: list[DomainCheckOut] = []
 
     model_config = {"from_attributes": True}
