@@ -111,7 +111,7 @@ class DomainRepository:
         self._session.add(domain)
         await self._session.flush()
         logger.info(
-            "Created domain %s (%s)",
+            "Created domain %r (%s)",
             domain.name,
             domain.id,
         )
@@ -179,7 +179,7 @@ class DomainRepository:
         domain.is_enabled = False
         await self._session.flush()
         logger.info(
-            "Archived orphan domain %s (%s)",
+            "Archived orphan domain %r (%s)",
             domain.name,
             domain.id,
         )
