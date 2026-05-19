@@ -46,19 +46,49 @@ router = APIRouter(
 async def list_domains(
     current_user: Annotated[User, Depends(get_current_active_user)],
     service: Annotated[DomainService, Depends(get_domain_service)],
-    page: Annotated[int, Query(ge=1)] = 1,
+    page: Annotated[
+        int,
+        Query(
+            ge=1,
+            description="Page number starting from 1.",
+        ),
+    ] = 1,
     page_size: Annotated[
         int,
         Query(
             ge=MonitoringConfig.DOMAIN_PAGE_SIZE_MIN,
             le=MonitoringConfig.DOMAIN_PAGE_SIZE_MAX,
+            description="Number of domains returned per page.",
         ),
     ] = MonitoringConfig.DOMAIN_PAGE_SIZE_DEFAULT,
+    recent_checks_limit: Annotated[
+        int,
+        Query(
+            ge=0,
+            le=MonitoringConfig.RECENT_CHECKS_LIMIT_MAX,
+            description=(
+                "Maximum number of recent checks returned " "for each domain."
+            ),
+        ),
+    ] = MonitoringConfig.RECENT_CHECKS_LIMIT_DEFAULT,
+    recent_checks_window_intervals: Annotated[
+        int,
+        Query(
+            ge=MonitoringConfig.RECENT_CHECKS_WINDOW_INTERVALS_MIN,
+            le=MonitoringConfig.RECENT_CHECKS_WINDOW_INTERVALS_MAX,
+            description=(
+                "History window expressed in monitoring intervals. "
+                "One interval equals one scheduler check cycle."
+            ),
+        ),
+    ] = MonitoringConfig.RECENT_CHECKS_WINDOW_INTERVALS_DEFAULT,
 ) -> DomainListOut:
     return await service.list_domains(
-        current_user.id,
+        user_id=current_user.id,
         page=page,
         page_size=page_size,
+        recent_checks_limit=recent_checks_limit,
+        recent_checks_window_intervals=recent_checks_window_intervals,
     )
 
 
