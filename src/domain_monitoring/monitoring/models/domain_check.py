@@ -20,7 +20,7 @@ class DomainCheck(Base):
         Index(
             None,
             "domain_id",
-            desc("checked_at"),
+            desc("bucket_started_at"),
         ),
     )
 
@@ -31,6 +31,10 @@ class DomainCheck(Base):
     checked_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+    )
+
+    bucket_started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
     )
 
     status: Mapped[MonitorStatus] = mapped_column(
