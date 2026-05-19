@@ -33,6 +33,7 @@ class DomainAddRequest(BaseModel):
 class DomainCheckOut(BaseModel):
     id: uuid.UUID
     checked_at: datetime
+    bucket_started_at: datetime
     status: MonitorStatus
     scheme_used: DomainProtocol | None
     tls_status: TlsStatus
@@ -48,8 +49,7 @@ class DomainOut(BaseModel):
     name: str
     title: str | None
     is_enabled: bool
-    created_at: datetime
-    latest_checks: list[DomainCheckOut] = []
+    latest_checks: list[DomainCheckOut | None] = []
 
     model_config = {"from_attributes": True}
 
