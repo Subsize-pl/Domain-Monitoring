@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import httpx
@@ -19,13 +20,11 @@ class DomainCheckWorkerPool:
     """
     Producer/consumer pool for domain checks.
 
-    Probe workers  - pull Domain objects from the probe queue, call probe_domain,
-                     push (Domain, result) pairs to the write queue.
-    Writer workers - pull from the write queue, persist each result in its own
-                     short-lived DB transaction.
+    Probe workers pull (Domain, bucket_started_at) jobs from the probe queue,
+    call probe_domain, and push (Domain, bucket_started_at, result) records to
+    the write queue.
 
-    Using separate sessions per write (instead of one session per worker) means
-    a failed transaction never corrupts subsequent writes.
+    Writer workers persist each result in its own short-lived DB transaction.
     """
 
     def __init__(
@@ -41,12 +40,12 @@ class DomainCheckWorkerPool:
         self._probe_workers_cnt = probe_workers
         self._writer_workers_cnt = writer_workers
 
-        self._probe_queue: asyncio.Queue[Domain | None] = asyncio.Queue(
-            maxsize=probe_queue_size
+        self._probe_queue: asyncio.Queue[tuple[Domain, datetime] | None] = (
+            asyncio.Queue(maxsize=probe_queue_size)
         )
-        self._write_queue: asyncio.Queue[tuple[Domain, DomainCheckResult] | None] = (
-            asyncio.Queue(maxsize=write_queue_size)
-        )
+        self._write_queue: asyncio.Queue[
+            tuple[Domain, datetime, DomainCheckResult] | None
+        ] = asyncio.Queue(maxsize=write_queue_size)
 
         self._probe_tasks: list[asyncio.Task[None]] = []
         self._writer_tasks: list[asyncio.Task[None]] = []
@@ -84,10 +83,8 @@ class DomainCheckWorkerPool:
         if not self._started:
             return
 
-        # Drain all in-flight work before sending poison pills
         await self.join()
 
-        # Signal each worker to exit via a poison pill (None)
         for _ in self._probe_tasks:
             await self._probe_queue.put(None)
         for _ in self._writer_tasks:
@@ -105,34 +102,39 @@ class DomainCheckWorkerPool:
         self._started = False
         logger.info("Worker pool stopped.")
 
-    async def enqueue_domains(self, domains: list[Domain]) -> None:
+    async def enqueue_domains(
+        self,
+        domains: list[Domain],
+        *,
+        bucket_started_at: datetime,
+    ) -> None:
         if not self._started:
             raise RuntimeError("Worker pool is not running.")
         for domain in domains:
-            await self._probe_queue.put(domain)
+            await self._probe_queue.put((domain, bucket_started_at))
 
     async def join(self) -> None:
-        """Wait until both queues are fully drained."""
         await self._probe_queue.join()
         await self._write_queue.join()
 
     async def _probe_worker(self, worker_id: int) -> None:
-        assert self._client is not None  # guaranteed by start()
+        assert self._client is not None
 
         while True:
-            domain = await self._probe_queue.get()
+            item = await self._probe_queue.get()
             try:
-                # poison pill -> exit
-                if domain is None:
+                if item is None:
                     return
 
+                domain, bucket_started_at = item
                 result = await probe_domain(domain.name, client=self._client)
-                await self._write_queue.put((domain, result))
+                await self._write_queue.put((domain, bucket_started_at, result))
 
             except Exception:
+                domain_name = item[0].name
                 logger.exception(
                     "Probe worker error domain=%r worker=%d",
-                    getattr(domain, "name", "?"),
+                    getattr(domain_name, "name", "?"),
                     worker_id,
                 )
             finally:
@@ -142,17 +144,20 @@ class DomainCheckWorkerPool:
         while True:
             item = await self._write_queue.get()
             try:
-                # poison pill -> exit
                 if item is None:
                     return
 
-                domain, result = item
-                await self._persist(domain, result, worker_id)
+                domain, bucket_started_at, result = item
+                await self._persist(
+                    domain=domain,
+                    bucket_started_at=bucket_started_at,
+                    result=result,
+                    worker_id=worker_id,
+                )
 
             except Exception:
                 logger.exception(
-                    "Writer worker unhandled error domain=%r worker=%d",
-                    getattr(item[0], "name", "?") if item else "shutdown",
+                    "Writer worker unhandled error worker=%d",
                     worker_id,
                 )
             finally:
@@ -160,13 +165,16 @@ class DomainCheckWorkerPool:
 
     async def _persist(
         self,
+        *,
         domain: Domain,
+        bucket_started_at: datetime,
         result: DomainCheckResult,
         worker_id: int,
     ) -> None:
         async with self._session_factory() as session:
             check_domain_orm = await DomainCheckRepository(session).create(
                 domain_id=domain.id,
+                bucket_started_at=bucket_started_at,
                 checked_at=result.checked_at,
                 status=result.status,
                 http_status_code=result.http_status_code,
@@ -179,8 +187,9 @@ class DomainCheckWorkerPool:
             await session.commit()
 
         logger.debug(
-            "Worker=%d: stored check domain=%r: %s",
+            "Worker=%d: stored check domain=%r bucket=%s result=%s",
             worker_id,
             domain.name,
+            bucket_started_at,
             check_domain_orm,
         )

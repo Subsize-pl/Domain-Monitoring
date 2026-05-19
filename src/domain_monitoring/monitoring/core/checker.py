@@ -106,9 +106,9 @@ async def _probe_scheme(
                 tls_status=tls_status,
                 checked_at=checked_at,
             ),
-            max_attempts=MonitoringConfig.MAX_RETRIES,
-            base_delay=MonitoringConfig.RETRY_BASE_DELAY,
-            max_delay=MonitoringConfig.RETRY_MAX_DELAY,
+            max_attempts=MonitoringConfig.CHECKER_MAX_RETRIES,
+            base_delay=MonitoringConfig.CHECKER_RETRY_BASE_DELAY,
+            max_delay=MonitoringConfig.CHECKER_RETRY_MAX_DELAY,
             retry_if=_is_retryable,
             jitter=True,
         )

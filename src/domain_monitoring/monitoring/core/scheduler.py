@@ -1,13 +1,15 @@
 import asyncio
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 from domain_monitoring.core.utils.log.logger import get_logger
 from domain_monitoring.monitoring.config import MonitoringConfig
 from domain_monitoring.monitoring.core.worker_pool import DomainCheckWorkerPool
 from domain_monitoring.monitoring.repositories.domain import DomainRepository
+from domain_monitoring.monitoring.utils import build_bucket_started_at
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -34,23 +36,25 @@ class DomainCheckScheduler:
         self._session_factory = session_factory
         self._pool = DomainCheckWorkerPool(
             session_factory=session_factory,
-            probe_workers=MonitoringConfig.PROBE_WORKERS,
-            writer_workers=MonitoringConfig.WRITER_WORKERS,
-            probe_queue_size=MonitoringConfig.PROBE_QUEUE_SIZE,
-            write_queue_size=MonitoringConfig.WRITE_QUEUE_SIZE,
+            probe_workers=MonitoringConfig.WORKERS_POOL_PROBE_WORKERS_COUNT,
+            writer_workers=MonitoringConfig.WORKERS_POOL_WRITER_WORKERS_COUNT,
+            probe_queue_size=MonitoringConfig.WORKERS_POOL_PROBE_QUEUE_SIZE,
+            write_queue_size=MonitoringConfig.WORKERS_POOL_WRITE_QUEUE_SIZE,
         )
         self._scheduler = AsyncIOScheduler()
         self._cycle_lock = asyncio.Lock()
 
         self._scheduler.add_job(
             self._run_cycle,
-            trigger=IntervalTrigger(
-                seconds=MonitoringConfig.CHECK_INTERVAL_SECONDS,
+            trigger=CronTrigger(
+                minute="*/5",
+                second=0,
+                timezone=timezone.utc,
             ),
             id=MonitoringConfig.SCHEDULER_ID,
             name=MonitoringConfig.SCHEDULER_NAME,
             max_instances=MonitoringConfig.SCHEDULER_MAX_INSTANCES,
-            coalesce=MonitoringConfig.SCHEDULER_COALESCE,  #
+            coalesce=MonitoringConfig.SCHEDULER_COALESCE,
             misfire_grace_time=MonitoringConfig.SCHEDULER_MISFIRE_GRACE_SECONDS,
             replace_existing=True,
         )
@@ -62,8 +66,8 @@ class DomainCheckScheduler:
             "%s started: interval=%ss probe_workers=%d writer_workers=%d",
             MonitoringConfig.SCHEDULER_NAME,
             MonitoringConfig.CHECK_INTERVAL_SECONDS,
-            MonitoringConfig.PROBE_WORKERS,
-            MonitoringConfig.WRITER_WORKERS,
+            MonitoringConfig.WORKERS_POOL_PROBE_WORKERS_COUNT,
+            MonitoringConfig.WORKERS_POOL_WRITER_WORKERS_COUNT,
         )
 
     async def stop(self) -> None:
@@ -81,6 +85,8 @@ class DomainCheckScheduler:
 
     async def _run_cycle(self) -> None:
         async with self._cycle_lock:
+            bucket_started_at = build_bucket_started_at()
+
             async with self._session_factory() as session:
                 domains = list(
                     await DomainRepository(session).get_all_enabled_domains(),
@@ -90,7 +96,20 @@ class DomainCheckScheduler:
                 logger.debug("No enabled domains. Skipping check cycle.")
                 return
 
-            logger.info("Check cycle started for %d domain(s).", len(domains))
-            await self._pool.enqueue_domains(domains)
+            logger.info(
+                "Check cycle started for %d domain(s), bucket=%s",
+                len(domains),
+                bucket_started_at,
+            )
+
+            await self._pool.enqueue_domains(
+                domains,
+                bucket_started_at=bucket_started_at,
+            )
             await self._pool.join()
-            logger.info("Check cycle finished for %d domain(s).", len(domains))
+
+            logger.info(
+                "Check cycle finished for %d domain(s), bucket=%s",
+                len(domains),
+                bucket_started_at,
+            )
