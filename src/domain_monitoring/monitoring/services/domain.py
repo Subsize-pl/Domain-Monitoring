@@ -13,14 +13,21 @@ from domain_monitoring.monitoring.exceptions import (
 )
 from domain_monitoring.monitoring.models import DomainCheck
 from domain_monitoring.monitoring.models.domain import Domain
-from domain_monitoring.monitoring.repositories.domain import DomainRepository
-from domain_monitoring.monitoring.repositories.domain_check import DomainCheckRepository
+from domain_monitoring.monitoring.repositories.domain import (
+    DomainRepository,
+    TitledDomain,
+)
+from domain_monitoring.monitoring.repositories.domain_check import (
+    DomainCheckRepository,
+)
 from domain_monitoring.monitoring.schemas.domain import (
     DomainCheckOut,
     DomainListOut,
     DomainOut,
 )
-from domain_monitoring.core.utils.domain_validation import normalize_and_validate_domain
+from domain_monitoring.core.utils.domain_validation import (
+    normalize_and_validate_domain,
+)
 from domain_monitoring.core.exceptions.domain_validation import (
     DomainValidationException,
 )
@@ -42,14 +49,13 @@ class DomainService:
     ) -> DomainOut:
         try:
             logger.debug(
-                "Normalizing and validating domain name %s",
-                repr(name),
+                "Normalizing and validating domain name %r",
+                name,
             )
             normalized = normalize_and_validate_domain(name).normalized
         except DomainValidationException as exc:
             logger.debug("Invalid domain name %r: %s", name, exc)
             raise
-
         logger.info("Adding domain %r for user %s", normalized, user_id)
 
         count = await self._domain_repo.count_user_domains(user_id)
@@ -148,6 +154,10 @@ class DomainService:
         *,
         page: int = 1,
         page_size: int = MonitoringConfig.DOMAIN_PAGE_SIZE_DEFAULT,
+        recent_checks_limit: int = MonitoringConfig.RECENT_CHECKS_LIMIT_DEFAULT,
+        recent_checks_window_intervals: int = (
+            MonitoringConfig.RECENT_CHECKS_WINDOW_INTERVALS_DEFAULT,
+        ),
     ) -> DomainListOut:
         page = max(page, 1)
         page_size = max(
@@ -166,10 +176,12 @@ class DomainService:
                 pages=math.ceil(total / page_size) if total else 0,
             )
 
-        titled_domains = await self._domain_repo.get_user_domains_paginated(
-            user_id,
-            limit=page_size,
-            offset=offset,
+        titled_domains: list[TitledDomain] = (
+            await self._domain_repo.get_user_domains_paginated(
+                user_id,
+                limit=page_size,
+                offset=offset,
+            )
         )
 
         if not titled_domains:
@@ -181,10 +193,11 @@ class DomainService:
                 pages=math.ceil(total / page_size) if total else 0,
             )
 
-        domain_ids = [titled_domain.domain.id for titled_domain in titled_domains]
+        domain_ids = [t_domain.domain.id for t_domain in titled_domains]
         checks_map = await self._check_repo.get_latest_for_domains(
             domain_ids,
-            limit_per_domain=MonitoringConfig.DEFAULT_LIMIT_PER_DOMAIN,
+            limit_per_domain=recent_checks_limit,
+            window_intervals=recent_checks_window_intervals,
         )
 
         items: list[DomainOut] = []
@@ -194,25 +207,10 @@ class DomainService:
                 [],
             )
             items.append(
-                DomainOut(
-                    id=titled_domain.domain.id,
-                    name=titled_domain.domain.name,
+                self._build_domain_out(
+                    titled_domain.domain,
+                    raw_checks,
                     title=titled_domain.title,
-                    is_enabled=titled_domain.domain.is_enabled,
-                    created_at=titled_domain.domain.created_at,
-                    latest_checks=[
-                        DomainCheckOut(
-                            id=check.id,
-                            checked_at=check.checked_at,
-                            status=check.status,
-                            scheme_used=check.scheme_used,
-                            tls_status=check.tls_status,
-                            http_status_code=check.http_status_code,
-                            latency_ms=check.latency_ms,
-                            error_text=check.error_text,
-                        )
-                        for check in raw_checks
-                    ],
                 )
             )
 
@@ -227,7 +225,7 @@ class DomainService:
     def _build_domain_out(
         self,
         domain: Domain,
-        checks: Sequence,
+        checks: Sequence[DomainCheck],
         title: str | None = None,
     ) -> DomainOut:
         return DomainOut(
@@ -235,18 +233,8 @@ class DomainService:
             name=domain.name,
             title=title,
             is_enabled=domain.is_enabled,
-            created_at=domain.created_at,
             latest_checks=[
-                DomainCheckOut(
-                    id=check.id,
-                    checked_at=check.checked_at,
-                    status=check.status,
-                    scheme_used=check.scheme_used,
-                    tls_status=check.tls_status,
-                    http_status_code=check.http_status_code,
-                    latency_ms=check.latency_ms,
-                    error_text=check.error_text,
-                )
+                None if check is None else DomainCheckOut.model_validate(check)
                 for check in checks
             ],
         )
